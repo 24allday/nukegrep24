@@ -228,9 +228,8 @@ if [[ $save_results == "yes" ]]; then
   / \ / \ 
  ( 2 | 4 ) 
   \_/ \_/ 
- 
- 
-${NC}"
+  
+  ${NC}"
 fi
 done
 
