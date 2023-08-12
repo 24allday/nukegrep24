@@ -35,6 +35,15 @@ loading_animation() {
 loading_animation "Welcome to the Vulnerability Scanner"
 
 clear
+echo -e "${BOLD}${RED}${BLINK}
+ 
+   _   _ 
+  / \ / \ 
+ ( 2 | 4 ) 
+  \_/ \_/ 
+ 
+ 
+${NC}"
 sleep 1
 
 echo -e "${BOLD}${RED}${BLINK}
@@ -81,16 +90,22 @@ echo -e "${RED}${BOLD}${BLINK}
 ${NC}"
 sleep 1
 
-# Display files in the current directory
-echo -e "${BOLD}${CYAN}Loading files in the current directory:${BOLD}${GREEN}"
-sleep 1
-ls -lt
+while true; do
+    # Display files in the current directory
+    echo -e "${BOLD}${CYAN}Loading files in the current directory:${BOLD}${GREEN}"
+    sleep 1
+    ls -lt
 
-# Display menu for the user
-echo -e "${BOLD}${CYAN}Choose an option:${NC}"
-echo -e "${BOLD}${YELLOW}1. Scan specific files${NC}"
-echo -e "${BOLD}${YELLOW}2. Scan all files in the current directory${NC}"
-read -p "${BOLD}${YELLOW}Enter your choice (1 or 2): ${NC}" choice
+    # Display menu for the user
+    echo -e "${BOLD}${CYAN}Choose an option:${NC}"
+    echo -e "${BOLD}${YELLOW}1. Scan specific files${NC}"
+    echo -e "${BOLD}${YELLOW}2. Scan all files in the current directory${NC}"
+    read -p "${BOLD}${YELLOW}Enter your choice (1 or 2, or q to quit): ${NC}" choice
+
+    if [[ $choice == "q" ]]; then
+        echo -e "${BOLD}${GREEN}Exiting the script. Goodbye!${NC}"
+        break
+    fi
 
 clear
 echo -e "${BOLD}${CYAN}${BLINK}
@@ -108,22 +123,35 @@ echo -e "${BOLD}${CYAN}${BLINK}
 ${NC}${MAGENTA}"
 
 # Validate user's choice
-case $choice in
-    1)
-        ls -1 -ts
-        echo -e "${BOLD}${YELLOW}Enter file names (separated by spaces) to search for vulnerabilities:${NC}"
-        read -r -a files
-        ;;
-    2)
-        echo -e "${BOLD}${BLUE}Beginning to scan all files in the directory${BOLD}${YELLOW}"
-        files=*
-        ;;
-    *)
-        echo -e "${BOLD}${RED}Invalid choice. Exiting.${NC}"
-	echo -e "${BLINK}${BLUE}${BOLD}Validate your selections and try again${NC}"
-        exit 1
-        ;;
-esac
+    case $choice in
+        1)
+            # List files for user to select
+            echo -e "${BOLD}${CYAN}Listing files in the current directory:${BOLD}${GREEN}"
+            sleep 1
+            ls -lt
+	    echo -e "${BOLD}${RED}${BLINK}
+   _   _  
+  / \ / \ 
+ ( 2 | 4 )
+  \_/ \_/ 
+
+${NC}"
+
+            # Display prompt to enter filenames
+            echo -e "${BOLD}${YELLOW}Enter filenames (separated by spaces) to scan: ${NC}"
+            read -r filenames
+            files=($filenames)
+            ;;
+     	2)
+            echo -e "${BOLD}${BLUE}Beginning to scan all files in the directory${BOLD}${YELLOW}"
+            files=($(find . -maxdepth 1 -type f -exec basename {} \;))
+            ;;
+        *)
+            echo -e "${BOLD}${RED}Invalid choice. Exiting.${NC}"
+            echo -e "${BLINK}${BLUE}${BOLD}Validate your selections and try again${NC}"
+            exit 1
+            ;;
+    esac
 # Initialize variables to store vulnerability counts
 low_count=0
 medium_count=0
@@ -132,8 +160,8 @@ critical_count=0
 
 # Loop through each file and search for vulnerabilities
 for file in "${files[@]}"; do
-    # Validate if the file exists
-    if [ -f "$file" ]; then
+    # Skip non-regular files and binary files
+    if [ -f "$file" ] && ! file -b --mime-encoding "$file" | grep -q "binary"; then
         echo -e "${BOLD}${GREEN}Searching for vulnerabilities in '$file':${NC}"
         vulnerabilities=$(grep -e "low\|medium\|high\|critical" "$file")
         
@@ -144,7 +172,7 @@ for file in "${files[@]}"; do
             # Count vulnerabilities
             low_count=$((low_count + $(grep -e "low" <<< "$vulnerabilities" | wc -l)))
             medium_count=$((medium_count + $(grep -e "medium" <<< "$vulnerabilities" | wc -l)))
-            high_count=$((high_count + $(grep -i -e "high" <<< "$vulnerabilities" | wc -l)))
+            high_count=$((high_count + $(grep -e "high" <<< "$vulnerabilities" | wc -l)))
             critical_count=$((critical_count + $(grep -e "critical" <<< "$vulnerabilities" | wc -l)))
         fi
     else
@@ -155,4 +183,54 @@ done
 # Display vulnerability summary
 echo -e "${BOLD}${YELLOW}Vulnerability Summary:${NC}"
 echo -e "${BOLD}Low: ${RED}$low_count${NC}${BOLD} | Medium: ${YELLOW}$medium_count${NC}${BOLD} | High: ${GREEN}$high_count${NC}${BOLD} | Critical: ${CYAN}$critical_count${NC}${BOLD}${NC}"
+
+# Ask if the user wants to save the results to a log file
+read -p "${BOLD}${CYAN}Do you want to save the results to a log file? (yes/no): ${NC}" save_results
+
+
+if [[ $save_results == "yes" ]]; then
+    read -p "${BOLD}${CYAN}Enter the filename for the log (without extension): ${NC}" log_filename
+    log_filename="$log_filename.log"
+
+    # Save the output to the log file
+    {
+        echo "Vulnerability Summary:"
+        echo "Low: $low_count | Medium: $medium_count | High: $high_count | Critical: $critical_count"
+        echo
+        echo "Vulnerabilities Found in Each File:"
+
+        for file in "${files[@]}"; do
+            if [ -f "$file" ]; then
+                echo "File: $file"
+                grep -e "low\|medium\|high\|critical" "$file"
+                echo
+            fi
+        done
+
+        echo
+        echo "Vulnerability Findings:"
+
+        for file in "${files[@]}"; do
+            if [ -f "$file" ]; then
+                echo "File: $file"
+                grep -E "\[[a-zA-Z0-9-]+\] \[.*\] \[low\|medium\|high\|critical\]" "$file"
+                echo
+            fi
+        done
+    } > "$log_filename"
+
+    echo -e "${BOLD}${GREEN}Results saved to '$log_filename'${NC}"
+    echo -e "${BOLD}${GREEN}Great! All done!'${NC}"
+    echo -e "${BOLD}${GREEN}Location: $(pwd)/$log_filename${NC}"
+    echo -e "${BOLD}${RED}${BLINK}
+ 
+   _   _ 
+  / \ / \ 
+ ( 2 | 4 ) 
+  \_/ \_/ 
+ 
+ 
+${NC}"
+fi
+done
 
