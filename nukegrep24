@@ -1,0 +1,158 @@
+#!/bin/bash
+
+# Set terminal colors
+BLACK=$(tput setaf 0)
+RED=$(tput setaf 1)
+GREEN=$(tput setaf 2)
+YELLOW=$(tput setaf 3)
+BLUE=$(tput setaf 4)
+MAGENTA=$(tput setaf 5)
+CYAN=$(tput setaf 6)
+WHITE=$(tput setaf 7)
+
+BOLD=$(tput bold)
+UNDERLINE=$(tput smul)
+BLINK=$(tput blink)
+REVERSE=$(tput rev)
+NC=$(tput sgr0) # Reset colors
+#Load
+# Loading animation with dynamic message and color variation
+loading_animation() {
+    local message=$1
+    local colors=("$GREEN" "$YELLOW" "$CYAN" "$MAGENTA" "$WHITE")
+    local num_colors=${#colors[@]}
+
+    for color in "${colors[@]}"; do
+        for i in {1..50}; do
+            clear
+            echo -e "${BOLD}${color}${BLINK}[+] ${message} $(printf '=%.0s' $(seq 1 $i)) [=>]${NC}"
+            sleep 0.05
+        done
+    done
+}
+
+# Call the loading animation function with a dynamic message
+loading_animation "Welcome to the Vulnerability Scanner"
+
+clear
+sleep 1
+
+echo -e "${BOLD}${RED}${BLINK}
+
+   _   _   _   _   _   _   _   _  
+  / \ / \ / \ / \ / \ / \ / \ / \ 
+ ( 2 | 4 | b | k | d | o | o | r )
+  \_/ \_/ \_/ \_/ \_/ \_/ \_/ \_/ 
+${NC}"
+sleep 1
+clear
+echo -e "${BOLD}${YELLOW}${BLINK}
+
+   _   _   _   _   _   _   _   _  
+  / \ / \ / \ / \ / \ / \ / \ / \ 
+ ( 2 | 4 | b | k | d | o | o | r )
+  \_/ \_/ \_/ \_/ \_/ \_/ \_/ \_/ 
+${NC}"
+sleep 1
+clear
+echo -e "${BOLD}${RED}${BLINK}
+
+   _   _   _   _   _   _   _   _  
+  / \ / \ / \ / \ / \ / \ / \ / \ 
+ ( 2 | 4 | b | k | d | o | o | r )
+  \_/ \_/ \_/ \_/ \_/ \_/ \_/ \_/ 
+${NC}"
+sleep 1
+clear
+echo -e "${BOLD}${CYAN}${BLINK}
+
+   _   _   _   _   _   _   _   _  
+  / \ / \ / \ / \ / \ / \ / \ / \ 
+ ( 2 | 4 | b | k | d | o | o | r )
+  \_/ \_/ \_/ \_/ \_/ \_/ \_/ \_/ 
+${NC}"
+sleep 1
+clear
+echo -e "${RED}${BOLD}${BLINK}
+   _   _   _   _   _   _   _   _  
+  / \ / \ / \ / \ / \ / \ / \ / \ 
+ ( 2 | 4 | b | k | d | o | o | r )
+  \_/ \_/ \_/ \_/ \_/ \_/ \_/ \_/ 
+${NC}"
+sleep 1
+
+# Display files in the current directory
+echo -e "${BOLD}${CYAN}Loading files in the current directory:${BOLD}${GREEN}"
+sleep 1
+ls -lt
+
+# Display menu for the user
+echo -e "${BOLD}${CYAN}Choose an option:${NC}"
+echo -e "${BOLD}${YELLOW}1. Scan specific files${NC}"
+echo -e "${BOLD}${YELLOW}2. Scan all files in the current directory${NC}"
+read -p "${BOLD}${YELLOW}Enter your choice (1 or 2): ${NC}" choice
+
+clear
+echo -e "${BOLD}${CYAN}${BLINK}
+███    ██ ██    ██ ██   ██ ███████ 
+████   ██ ██    ██ ██  ██  ██      
+██ ██  ██ ██    ██ █████   █████   
+██  ██ ██ ██    ██ ██  ██  ██      
+██   ████  ██████  ██   ██ ███████ 
+                                   
+                                   
+   _   _   _   _  
+  / \ / \ / \ / \ 
+ ( G | r | e | p )
+  \_/ \_/ \_/ \_/ 
+${NC}${MAGENTA}"
+
+# Validate user's choice
+case $choice in
+    1)
+        ls -1 -ts
+        echo -e "${BOLD}${YELLOW}Enter file names (separated by spaces) to search for vulnerabilities:${NC}"
+        read -r -a files
+        ;;
+    2)
+        echo -e "${BOLD}${BLUE}Beginning to scan all files in the directory${BOLD}${YELLOW}"
+        files=*
+        ;;
+    *)
+        echo -e "${BOLD}${RED}Invalid choice. Exiting.${NC}"
+	echo -e "${BLINK}${BLUE}${BOLD}Validate your selections and try again${NC}"
+        exit 1
+        ;;
+esac
+# Initialize variables to store vulnerability counts
+low_count=0
+medium_count=0
+high_count=0
+critical_count=0
+
+# Loop through each file and search for vulnerabilities
+for file in "${files[@]}"; do
+    # Validate if the file exists
+    if [ -f "$file" ]; then
+        echo -e "${BOLD}${GREEN}Searching for vulnerabilities in '$file':${NC}"
+        vulnerabilities=$(grep -e "low\|medium\|high\|critical" "$file")
+        
+        if [ -n "$vulnerabilities" ]; then
+            echo -e "${BOLD}Found vulnerabilities in '$file':${NC}"
+            echo "$vulnerabilities"
+            
+            # Count vulnerabilities
+            low_count=$((low_count + $(grep -e "low" <<< "$vulnerabilities" | wc -l)))
+            medium_count=$((medium_count + $(grep -e "medium" <<< "$vulnerabilities" | wc -l)))
+            high_count=$((high_count + $(grep -i -e "high" <<< "$vulnerabilities" | wc -l)))
+            critical_count=$((critical_count + $(grep -e "critical" <<< "$vulnerabilities" | wc -l)))
+        fi
+    else
+        echo -e "${BOLD}${RED}File '$file' not found.${NC}"
+    fi
+done
+
+# Display vulnerability summary
+echo -e "${BOLD}${YELLOW}Vulnerability Summary:${NC}"
+echo -e "${BOLD}Low: ${RED}$low_count${NC}${BOLD} | Medium: ${YELLOW}$medium_count${NC}${BOLD} | High: ${GREEN}$high_count${NC}${BOLD} | Critical: ${CYAN}$critical_count${NC}${BOLD}${NC}"
+
